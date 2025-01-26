@@ -30,7 +30,10 @@ fn get_package_json_data(path: &str) -> Result<Value, InvalidNodeProjectError> {
     Ok(json_value)
 }
 
-pub fn link_package(package_path: Option<&str>) -> Result<bool, NodeSpaceError> {
+pub fn link_package(
+    package_path: Option<&str>,
+    package_name_alias: Option<String>,
+) -> Result<bool, NodeSpaceError> {
     let mut config_file = ConfigFile::new()?;
     let current_working_dir = get_current_path()?;
 
@@ -46,7 +49,7 @@ pub fn link_package(package_path: Option<&str>) -> Result<bool, NodeSpaceError> 
         return Err(InvalidNodeProjectError::MissingPackageJson.into());
     }
 
-    config_file.add_linked_package(current_path, package_name.unwrap())?;
+    config_file.add_linked_package(current_path, package_name.unwrap(), package_name_alias)?;
 
     Ok(true)
 }
@@ -66,5 +69,7 @@ pub fn handle_link_command(link_args: &LinkArgs) -> Result<bool, NodeSpaceError>
         return Ok(handle_show_linked_packages()?);
     }
 
-    Ok(link_package(None)?)
+    let alias = &link_args.name;
+
+    Ok(link_package(None, alias.clone())?)
 }
