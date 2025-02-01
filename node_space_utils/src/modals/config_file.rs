@@ -1,7 +1,10 @@
+use std::os::unix::fs::symlink;
 use std::{collections::HashMap, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+use crate::errors::node_space::NodeSpaceError;
+use crate::path_utils::get_package_path_from_node_modules;
 use crate::{
     errors::{config_file::ConfigFileError, invalid_project::InvalidNodeProjectError},
     path_utils::expand_tilde,
@@ -59,12 +62,56 @@ impl ConfigFile {
         &mut self,
         new_path: String,
         package_name: &str,
-    ) -> Result<(), ConfigFileError> {
-        if (!self.symlinks[package_name]) {}
+        package_alias: Option<String>,
+    ) -> Result<(), NodeSpaceError> {
+        let effective_name = match package_alias {
+            Some(ref value) => &value,
+            None => package_name,
+        };
 
-        self.symlinks[package_name];
-        self.linked_pachages
-            .push(Package::new(new_path, package_name.to_string()));
+        if self.symlinks.get(effective_name).is_none() {
+            self.symlinks.insert(effective_name.to_string(), Vec::new());
+        }
+
+        let package = self.linked_pachages.iter().find_map(|x| {
+            let current_effective_name = match &x.alias {
+                Some(value) => value,
+                None => &x.name,
+            };
+
+            if current_effective_name == effective_name {
+                return Some(x.clone());
+            }
+
+            None
+        });
+
+        if package.is_none() {
+            return Err(NodeSpaceError::ConfigFileError(
+                ConfigFileError::MissingLinkedPackage,
+            ));
+        }
+
+        let package = package.unwrap();
+
+        dbg!(&package);
+
+        let list = self.symlinks.get_mut(effective_name).unwrap();
+
+        list.push(package.clone());
+
+        let symlink_path = get_package_path_from_node_modules(&new_path, &package.name)?;
+
+        dbg!(&symlink_path, &package.path);
+
+        match symlink(&package.path, symlink_path) {
+            Ok(_) => {}
+            Err(error) => {
+                return Err(NodeSpaceError::ConfigFileError(
+                    ConfigFileError::FailedToCreateSymLink(error.to_string()),
+                ))
+            }
+        };
 
         let result = self.save()?;
 
@@ -93,7 +140,7 @@ impl ConfigFile {
         new_path: String,
         package_name: &str,
         package_alias: Option<String>,
-    ) -> Result<(), ConfigFileError> {
+    ) -> Result<(), NodeSpaceError> {
         let mut is_symlink = false;
 
         for package in self.linked_pachages.iter() {
@@ -126,10 +173,13 @@ impl ConfigFile {
             }
         }
 
-        if is_symlink {
-            return Ok(self.create_symlink(new_path, package_name)?);
+        if !is_symlink {
+            return Ok(self.handle_link(new_path, package_name, package_alias)?);
         }
 
-        Ok(self.handle_link(new_path, package_name, package_alias)?)
+        match self.create_symlink(new_path, package_name, package_alias) {
+            Ok(_) => Ok(()),
+            Err(error) => Err(error),
+        }
     }
 }

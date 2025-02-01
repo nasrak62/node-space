@@ -1,12 +1,15 @@
 use std::error::Error;
 use std::fmt;
 
-use super::{config_file::ConfigFileError, invalid_project::InvalidNodeProjectError};
+use super::{
+    config_file::ConfigFileError, invalid_project::InvalidNodeProjectError, symlink::SymlinkError,
+};
 
 #[derive(Debug)]
 pub enum NodeSpaceError {
     ConfigFileError(ConfigFileError),
     InvalidNodeProjectError(InvalidNodeProjectError),
+    SymlinkError(SymlinkError),
 }
 
 impl fmt::Display for NodeSpaceError {
@@ -18,6 +21,9 @@ impl fmt::Display for NodeSpaceError {
 
             NodeSpaceError::InvalidNodeProjectError(err) => {
                 write!(f, "Project error: {}", err)
+            }
+            NodeSpaceError::SymlinkError(err) => {
+                write!(f, "Symlink error: {}", err)
             }
         }
     }
@@ -34,5 +40,11 @@ impl From<ConfigFileError> for NodeSpaceError {
 impl From<InvalidNodeProjectError> for NodeSpaceError {
     fn from(err: InvalidNodeProjectError) -> Self {
         NodeSpaceError::InvalidNodeProjectError(err)
+    }
+}
+
+impl From<SymlinkError> for NodeSpaceError {
+    fn from(err: SymlinkError) -> Self {
+        NodeSpaceError::SymlinkError(err)
     }
 }

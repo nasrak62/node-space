@@ -58,7 +58,15 @@ fn handle_show_linked_packages() -> Result<bool, NodeSpaceError> {
     let config_file = ConfigFile::new()?;
 
     for value in config_file.linked_pachages.iter() {
-        println!("{}, at ({})", value.name, value.path);
+        let alias = match &value.alias {
+            Some(value) => value,
+            None => "",
+        };
+
+        println!(
+            "name: {}, alias: {}, at ({})",
+            value.name, alias, value.path
+        );
     }
 
     Ok(true)
