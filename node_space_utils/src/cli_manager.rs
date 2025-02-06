@@ -1,17 +1,5 @@
-use clap::{Args, Parser, Subcommand};
-
-#[derive(Args)]
-pub struct LinkArgs {
-    pub name: Option<String>,
-
-    #[arg(short, long)]
-    pub show: bool,
-}
-
-#[derive(Subcommand)]
-pub enum Commands {
-    Link(LinkArgs),
-}
+use crate::commands::base_command::Commands;
+use clap::Parser;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about=None)]

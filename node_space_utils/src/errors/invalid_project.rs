@@ -5,6 +5,7 @@ use std::fmt;
 pub enum InvalidNodeProjectError {
     MissingPackageJson,
     InvalidDirectory,
+    InvalidPackageJson,
     Other(String),
 }
 
@@ -14,6 +15,11 @@ impl fmt::Display for InvalidNodeProjectError {
             InvalidNodeProjectError::MissingPackageJson => {
                 write!(f, "The node project is invalid: Missing package.json")
             }
+
+            InvalidNodeProjectError::InvalidPackageJson => {
+                write!(f, "The node project is invalid: invalid package.json")
+            }
+
             InvalidNodeProjectError::InvalidDirectory => {
                 write!(f, "The node project is invalid: Invalid directory")
             }

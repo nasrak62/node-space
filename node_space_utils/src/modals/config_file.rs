@@ -4,20 +4,26 @@ use std::{collections::HashMap, fs, path::PathBuf};
 use serde::{Deserialize, Serialize};
 
 use crate::errors::node_space::NodeSpaceError;
+use crate::errors::symlink::SymlinkError;
+use crate::package_utils::{find_package_by_name, is_package_exist};
 use crate::path_utils::get_package_path_from_node_modules;
+use crate::symlink_utils::handle_link_candidate;
 use crate::{
     errors::{config_file::ConfigFileError, invalid_project::InvalidNodeProjectError},
     path_utils::expand_tilde,
 };
 
+use super::link_action::LinkAction;
 use super::package::Package;
 
 const CONFIG_PATH_STR: &str = "~/.config/node-space/space-data.json";
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct ConfigFile {
-    pub linked_pachages: Vec<Package>,
+    pub linked_packages: Vec<Package>,
+    pub projects: Vec<Package>,
     pub symlinks: HashMap<String, Vec<Package>>,
+    pub groups: HashMap<String, Vec<Package>>,
     config_path: PathBuf,
 }
 
@@ -58,49 +64,33 @@ impl ConfigFile {
         Ok(())
     }
 
-    pub fn create_symlink(
-        &mut self,
-        new_path: String,
-        package_name: &str,
-        package_alias: Option<String>,
-    ) -> Result<(), NodeSpaceError> {
-        let effective_name = match package_alias {
-            Some(ref value) => &value,
-            None => package_name,
+    pub fn create_symlink(&mut self, current_package: &Package) -> Result<(), NodeSpaceError> {
+        let link_to_name = match current_package.alias {
+            Some(ref value) => value,
+            None => {
+                return Err(NodeSpaceError::SymlinkError(
+                    SymlinkError::MissingLinkToTargetName,
+                ))
+            }
         };
 
-        if self.symlinks.get(effective_name).is_none() {
-            self.symlinks.insert(effective_name.to_string(), Vec::new());
+        if self.symlinks.get(&current_package.name).is_none() {
+            self.symlinks
+                .insert(current_package.name.to_string(), Vec::new());
         }
 
-        let package = self.linked_pachages.iter().find_map(|x| {
-            let current_effective_name = match &x.alias {
-                Some(value) => value,
-                None => &x.name,
-            };
-
-            if current_effective_name == effective_name {
-                return Some(x.clone());
-            }
-
-            None
-        });
-
-        if package.is_none() {
-            return Err(NodeSpaceError::ConfigFileError(
-                ConfigFileError::MissingLinkedPackage,
-            ));
+        if !is_package_exist(&self.projects, &current_package.path) {
+            self.projects.push(current_package.clone())
         }
 
-        let package = package.unwrap();
+        let package = find_package_by_name(&self.linked_packages, link_to_name)?;
 
-        dbg!(&package);
-
-        let list = self.symlinks.get_mut(effective_name).unwrap();
+        let list = self.symlinks.get_mut(&current_package.name).unwrap();
 
         list.push(package.clone());
 
-        let symlink_path = get_package_path_from_node_modules(&new_path, &package.name)?;
+        let symlink_path =
+            get_package_path_from_node_modules(&current_package.path, &package.name)?;
 
         dbg!(&symlink_path, &package.path);
 
@@ -118,17 +108,42 @@ impl ConfigFile {
         Ok(result)
     }
 
-    pub fn handle_link(
+    pub fn handle_link(&mut self, current_package: &Package) -> Result<(), ConfigFileError> {
+        self.linked_packages.push(current_package.clone());
+
+        if !is_package_exist(&self.projects, &current_package.path) {
+            self.projects.push(current_package.clone())
+        }
+
+        let result = self.save()?;
+
+        Ok(result)
+    }
+
+    pub fn add_project(&mut self, current_package: &Package) -> Result<(), NodeSpaceError> {
+        if !is_package_exist(&self.projects, &current_package.path) {
+            self.projects.push(current_package.clone())
+        }
+
+        let result = self.save()?;
+
+        Ok(result)
+    }
+
+    pub fn add_group(
         &mut self,
-        new_path: String,
-        package_name: &str,
-        package_alias: Option<String>,
-    ) -> Result<(), ConfigFileError> {
-        self.linked_pachages.push(Package::new(
-            new_path,
-            package_name.to_string(),
-            package_alias,
-        ));
+        current_package: &Package,
+        group_name: &str,
+    ) -> Result<(), NodeSpaceError> {
+        if self.groups.get(group_name).is_none() {
+            self.groups.insert(group_name.to_string(), Vec::new());
+        }
+
+        let list = self.groups.get_mut(group_name).unwrap();
+
+        if !is_package_exist(&list, &current_package.path) {
+            list.push(current_package.clone());
+        }
 
         let result = self.save()?;
 
@@ -141,45 +156,23 @@ impl ConfigFile {
         package_name: &str,
         package_alias: Option<String>,
     ) -> Result<(), NodeSpaceError> {
-        let mut is_symlink = false;
+        // case 1: package1 . -> link package1 with name package1
+        // case 2: package1 test -> link package1 with alias test
+        // case 3: package1 again -> do nothing (alias and named)
+        // case 4: package2 link to test -> link package2 with test
+        // case 5: package2 . -> link package2 with name package2
+        // case 6: package2 test2 -> link package2 with name test2
+        // states -> do nothing, link self, link to another package
+        let current_package = Package::new(new_path, package_name.to_string(), package_alias);
+        let action = handle_link_candidate(&self.linked_packages, &current_package);
 
-        for package in self.linked_pachages.iter() {
-            let is_same_path = package.path == new_path;
-            let is_same_name = package.name == package_name;
-
-            let is_match_alias = match package_alias {
-                Some(ref value) => value == package_name,
-                None => false,
-            };
-
-            let is_alias_refrencing = match package_alias {
-                Some(ref value) => match package_alias {
-                    Some(ref out_value) => value == out_value,
-                    None => false,
-                },
-                None => false,
-            };
-
-            let is_same_target = is_same_name || is_match_alias || is_alias_refrencing;
-
-            if is_same_path {
-                return Ok(());
-            }
-
-            if !is_same_path && is_same_target {
-                is_symlink = true;
-
-                break;
-            }
-        }
-
-        if !is_symlink {
-            return Ok(self.handle_link(new_path, package_name, package_alias)?);
-        }
-
-        match self.create_symlink(new_path, package_name, package_alias) {
-            Ok(_) => Ok(()),
-            Err(error) => Err(error),
+        match action {
+            LinkAction::LinkSelf => Ok(self.handle_link(&current_package)?),
+            LinkAction::DoNothing => Ok(()),
+            LinkAction::LinkToAnother => match self.create_symlink(&current_package) {
+                Ok(_) => Ok(()),
+                Err(error) => Err(error),
+            },
         }
     }
 }

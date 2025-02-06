@@ -8,6 +8,7 @@ pub enum ConfigFileError {
     CantDesirialize,
     CantSerialize(String),
     MissingLinkedPackage,
+    InvalidGroupName,
     FailedToCreateSymLink(String),
     Other(String),
 }
@@ -34,6 +35,11 @@ impl fmt::Display for ConfigFileError {
             ConfigFileError::FailedToCreateSymLink(ref message) => {
                 write!(f, "Can't create symlink: {}", message)
             }
+
+            ConfigFileError::InvalidGroupName => {
+                write!(f, "Invalid group name")
+            }
+
             ConfigFileError::Other(ref message) => {
                 write!(f, "Invalid config file: {}", message)
             }

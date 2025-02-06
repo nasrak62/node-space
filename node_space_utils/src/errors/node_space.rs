@@ -9,6 +9,9 @@ use super::{
 pub enum NodeSpaceError {
     ConfigFileError(ConfigFileError),
     InvalidNodeProjectError(InvalidNodeProjectError),
+    InvalidPackageVersion,
+    GroupNameIsNotValid,
+    InvalidPackageJsonAfterChanges(String),
     SymlinkError(SymlinkError),
 }
 
@@ -24,6 +27,20 @@ impl fmt::Display for NodeSpaceError {
             }
             NodeSpaceError::SymlinkError(err) => {
                 write!(f, "Symlink error: {}", err)
+            }
+            NodeSpaceError::InvalidPackageVersion => {
+                write!(f, "The Specified package has bad format: 'name@version'")
+            }
+            NodeSpaceError::InvalidPackageJsonAfterChanges(ref message) => {
+                write!(
+                    f,
+                    "The package json data is not valid after the recent changes, can't jsonify: {}",
+                    message
+                )
+            }
+
+            NodeSpaceError::GroupNameIsNotValid => {
+                write!(f, "The group name you have entered in not in the config file, please create this group first")
             }
         }
     }
