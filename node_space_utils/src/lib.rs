@@ -1,5 +1,7 @@
 pub mod args;
+pub mod build_command;
 pub mod cli_manager;
+pub mod command_line;
 pub mod commands;
 pub mod dependencies;
 pub mod display_utils;
@@ -11,4 +13,7 @@ pub mod modals;
 pub mod package_utils;
 pub mod path_utils;
 pub mod projects;
+pub mod socket;
 pub mod symlink_utils;
+pub mod watch_coordinator;
+pub mod watcher_utils;

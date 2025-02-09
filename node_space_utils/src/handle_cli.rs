@@ -1,3 +1,4 @@
+use crate::build_command::build_project::handle_build_command;
 use crate::cli_manager::Cli;
 use crate::commands::base_command::Commands;
 use crate::commands::dependencies::DependenciesCommands;
@@ -34,5 +35,6 @@ pub fn handle_cli() -> Result<bool, NodeSpaceError> {
                 update_dependency(&update_dependency_args)
             }
         },
+        Commands::Build(build_args) => handle_build_command(build_args),
     }
 }

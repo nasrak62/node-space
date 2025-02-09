@@ -2,7 +2,8 @@ use std::error::Error;
 use std::fmt;
 
 use super::{
-    config_file::ConfigFileError, invalid_project::InvalidNodeProjectError, symlink::SymlinkError,
+    build::BuildError, config_file::ConfigFileError, invalid_project::InvalidNodeProjectError,
+    process::ProcessError, socket::SocketError, symlink::SymlinkError, watcher::WatcherError,
 };
 
 #[derive(Debug)]
@@ -13,6 +14,14 @@ pub enum NodeSpaceError {
     GroupNameIsNotValid,
     InvalidPackageJsonAfterChanges(String),
     SymlinkError(SymlinkError),
+    BuildError(BuildError),
+    ProcessError(ProcessError),
+    SocketError(SocketError),
+    WatcherError(WatcherError),
+    CantOpenPIDFile(String),
+    CantParsePIDNumber(String),
+    CantStartCoordinator(String),
+    CantWriteToPIDFile(String),
 }
 
 impl fmt::Display for NodeSpaceError {
@@ -28,6 +37,22 @@ impl fmt::Display for NodeSpaceError {
             NodeSpaceError::SymlinkError(err) => {
                 write!(f, "Symlink error: {}", err)
             }
+
+            NodeSpaceError::BuildError(err) => {
+                write!(f, "build error: {}", err)
+            }
+            NodeSpaceError::ProcessError(err) => {
+                write!(f, "ProcessError error: {}", err)
+            }
+
+            NodeSpaceError::SocketError(err) => {
+                write!(f, "SocketError error: {}", err)
+            }
+
+            NodeSpaceError::WatcherError(err) => {
+                write!(f, "WatcherError error: {}", err)
+            }
+
             NodeSpaceError::InvalidPackageVersion => {
                 write!(f, "The Specified package has bad format: 'name@version'")
             }
@@ -41,6 +66,20 @@ impl fmt::Display for NodeSpaceError {
 
             NodeSpaceError::GroupNameIsNotValid => {
                 write!(f, "The group name you have entered in not in the config file, please create this group first")
+            }
+            NodeSpaceError::CantOpenPIDFile(ref message) => {
+                write!(f, "Can't open PID file: {}", message)
+            }
+            NodeSpaceError::CantParsePIDNumber(ref message) => {
+                write!(f, "Can't Parse pid number: {}", message)
+            }
+
+            NodeSpaceError::CantStartCoordinator(ref message) => {
+                write!(f, "Can't start coordinator: {}", message)
+            }
+
+            NodeSpaceError::CantWriteToPIDFile(ref message) => {
+                write!(f, "Can't write to pid file: {}", message)
             }
         }
     }
@@ -63,5 +102,29 @@ impl From<InvalidNodeProjectError> for NodeSpaceError {
 impl From<SymlinkError> for NodeSpaceError {
     fn from(err: SymlinkError) -> Self {
         NodeSpaceError::SymlinkError(err)
+    }
+}
+
+impl From<BuildError> for NodeSpaceError {
+    fn from(err: BuildError) -> Self {
+        NodeSpaceError::BuildError(err)
+    }
+}
+
+impl From<ProcessError> for NodeSpaceError {
+    fn from(err: ProcessError) -> Self {
+        NodeSpaceError::ProcessError(err)
+    }
+}
+
+impl From<SocketError> for NodeSpaceError {
+    fn from(err: SocketError) -> Self {
+        NodeSpaceError::SocketError(err)
+    }
+}
+
+impl From<WatcherError> for NodeSpaceError {
+    fn from(err: WatcherError) -> Self {
+        NodeSpaceError::WatcherError(err)
     }
 }

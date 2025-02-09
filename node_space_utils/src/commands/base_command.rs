@@ -1,5 +1,6 @@
 use clap::Subcommand;
 
+use crate::args::build_args::BuildArgs;
 use crate::args::link_args::LinkArgs;
 
 use super::dependencies::DependenciesBridge;
@@ -12,4 +13,5 @@ pub enum Commands {
     Project(ProjectCommandBridge),
     Group(GroupCommandBridge),
     Deps(DependenciesBridge),
+    Build(BuildArgs),
 }

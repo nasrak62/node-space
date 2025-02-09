@@ -1,0 +1,7 @@
+[package]
+name = "node-space"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+node_space_utils = {path = "../node_space_utils"}
