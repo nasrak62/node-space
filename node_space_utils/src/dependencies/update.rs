@@ -89,9 +89,10 @@ pub fn update_dependency(args: &UpdateDependencyArgs) -> Result<bool, NodeSpaceE
     let config_file = ConfigFile::new()?;
 
     let (package_name, package_version) = parse_package_name(&args.name)?;
+    let package_name_str = &package_name.clone().to_owned();
 
     if args.group.is_none() {
-        return update_dependency_for_path(package_name, package_version, None);
+        return update_dependency_for_path(package_name_str, package_version, None);
     }
 
     let group_name = &args.group.clone().unwrap();
@@ -103,7 +104,7 @@ pub fn update_dependency(args: &UpdateDependencyArgs) -> Result<bool, NodeSpaceE
     }
 
     for package in current_groups.unwrap().iter() {
-        update_dependency_for_path(package_name, package_version, Some(&package.path))?;
+        update_dependency_for_path(package_name_str, package_version, Some(&package.path))?;
     }
 
     Ok(true)

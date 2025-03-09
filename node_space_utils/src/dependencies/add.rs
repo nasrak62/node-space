@@ -84,15 +84,23 @@ pub fn add_dependency_for_path(
     return Ok(true);
 }
 
-pub fn parse_package_name(name: &str) -> Result<(&str, &str), NodeSpaceError> {
+pub fn parse_package_name(name: &str) -> Result<(String, &str), NodeSpaceError> {
+    let is_scoped_package = name.starts_with("@");
     let package_info_list: Vec<&str> = name.split("@").collect();
+    let package_parts_len = package_info_list.len();
 
-    if package_info_list.len() < 2 {
+    if package_parts_len != 2 && package_parts_len != 3 {
         return Err(NodeSpaceError::InvalidPackageVersion);
     }
 
-    let package_name = package_info_list[0];
-    let package_version = package_info_list[1];
+    let (package_name, package_version) = match is_scoped_package {
+        false => (String::from(package_info_list[0]), package_info_list[1]),
+        true => {
+            let value = String::from("@") + package_info_list[1];
+
+            (value, package_info_list[2])
+        }
+    };
 
     Ok((package_name, package_version))
 }
@@ -102,10 +110,12 @@ pub fn add_dependency(args: &AddDependencyArgs) -> Result<bool, NodeSpaceError> 
 
     let (package_name, package_version) = parse_package_name(&args.name)?;
 
+    let package_name_str = &package_name.clone().to_owned();
+
     dbg!("{}, {}", package_name, package_version);
 
     if args.group.is_none() {
-        return add_dependency_for_path(package_name, package_version, None);
+        return add_dependency_for_path(package_name_str, package_version, None);
     }
 
     let group_name = &args.group.clone().unwrap();
@@ -117,7 +127,7 @@ pub fn add_dependency(args: &AddDependencyArgs) -> Result<bool, NodeSpaceError> 
     }
 
     for package in current_groups.unwrap().iter() {
-        add_dependency_for_path(package_name, package_version, Some(&package.path))?;
+        add_dependency_for_path(package_name_str, package_version, Some(&package.path))?;
     }
 
     Ok(true)

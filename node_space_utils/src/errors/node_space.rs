@@ -22,6 +22,10 @@ pub enum NodeSpaceError {
     CantParsePIDNumber(String),
     CantStartCoordinator(String),
     CantWriteToPIDFile(String),
+    CantPlaceSigTermHandler(String),
+    CantCreateLogFile(String),
+    CantWriteLogFile(String),
+    CantCreateSocketFile(String),
 }
 
 impl fmt::Display for NodeSpaceError {
@@ -80,6 +84,19 @@ impl fmt::Display for NodeSpaceError {
 
             NodeSpaceError::CantWriteToPIDFile(ref message) => {
                 write!(f, "Can't write to pid file: {}", message)
+            }
+            NodeSpaceError::CantPlaceSigTermHandler(ref message) => {
+                write!(f, "Can't place termintate signal handler: {}", message)
+            }
+
+            NodeSpaceError::CantCreateLogFile(ref message) => {
+                write!(f, "Can't create log file: {}", message)
+            }
+            NodeSpaceError::CantWriteLogFile(ref message) => {
+                write!(f, "Can't write to log file: {}", message)
+            }
+            NodeSpaceError::CantCreateSocketFile(ref message) => {
+                write!(f, "Can't create socket file: {}", message)
             }
         }
     }

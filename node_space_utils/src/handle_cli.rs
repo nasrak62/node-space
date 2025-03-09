@@ -1,6 +1,7 @@
 use crate::build_command::build_project::handle_build_command;
 use crate::cli_manager::Cli;
 use crate::commands::base_command::Commands;
+use crate::commands::coordinator::CoordinatorCommands;
 use crate::commands::dependencies::DependenciesCommands;
 use crate::commands::group::GroupCommands;
 use crate::commands::project::ProjectCommands;
@@ -12,6 +13,8 @@ use crate::groups::show::show_group;
 use crate::link_package::handle_link_command;
 use crate::projects::add::add_project;
 use crate::projects::show::show_all_projects;
+use crate::watch_coordinator::coordinator::handle_coordiantor_logs::handle_coordinator_logs;
+use crate::watch_coordinator::coordinator::handle_start_coordinator::handle_start_coordinator;
 
 use clap::Parser;
 
@@ -36,5 +39,9 @@ pub fn handle_cli() -> Result<bool, NodeSpaceError> {
             }
         },
         Commands::Build(build_args) => handle_build_command(build_args),
+        Commands::Coordinator(coordinator_args) => match &coordinator_args.coordinator_commands {
+            CoordinatorCommands::Start(start_args) => handle_start_coordinator(start_args),
+            CoordinatorCommands::Log(log_args) => handle_coordinator_logs(log_args),
+        },
     }
 }

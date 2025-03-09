@@ -13,11 +13,17 @@ use crate::{
 pub fn handle_watch_project_with_dependencies(
     data: SocketBuildData,
 ) -> Result<bool, NodeSpaceError> {
+    dbg!("handle_watch_project_with_dependencies");
+
     start_coordinator()?;
-    request_build_watcher_for_project()?;
+    request_build_watcher_for_project(data.clone())?;
 
     if data.watch_only_links {
-        add_local_project_watcher(data.project)?;
+        dbg!("watch_only_links");
+
+        add_local_project_watcher(data)?;
+
+        return Ok(true);
     }
 
     Ok(true)
@@ -41,20 +47,26 @@ pub fn handle_build_command(args: &BuildArgs) -> Result<bool, NodeSpaceError> {
     let current_project = Package::new(current_path, package_name.clone(), None);
 
     let current_symlink_option = config_file.symlinks.get(&package_name);
-    let has_symlinks = current_symlink_option.is_some();
     let is_local_watcher = !args.deamon;
 
+    let effective_symlinks = match current_symlink_option {
+        Some(value) => value.to_vec(),
+        None => Vec::new(),
+    };
+
+    let has_symlinks = !effective_symlinks.is_empty();
+
+    dbg!("{}", &effective_symlinks);
+
+    let socket_data = SocketBuildData::new(effective_symlinks, current_project, is_local_watcher);
+
     if !has_symlinks && is_local_watcher {
-        add_local_project_watcher(current_project)?;
+        dbg!("only local watcher");
+
+        add_local_project_watcher(socket_data)?;
 
         return Ok(true);
     }
-
-    let socket_data = SocketBuildData::new(
-        current_symlink_option.unwrap().to_vec(),
-        current_project,
-        !args.deamon,
-    );
 
     handle_watch_project_with_dependencies(socket_data)
 }
