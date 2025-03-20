@@ -15,6 +15,7 @@ use crate::{
 
 use super::link_action::LinkAction;
 use super::package::Package;
+use super::server_config::ServerConfig;
 
 const CONFIG_PATH_STR: &str = "~/.config/node-space/space-data.json";
 
@@ -24,6 +25,7 @@ pub struct ConfigFile {
     pub projects: Vec<Package>,
     pub symlinks: HashMap<String, Vec<Package>>,
     pub groups: HashMap<String, Vec<Package>>,
+    pub server_config: HashMap<String, ServerConfig>,
     config_path: PathBuf,
 }
 
@@ -155,6 +157,7 @@ impl ConfigFile {
         new_path: String,
         package_name: &str,
         package_alias: Option<String>,
+        output_dir: Option<String>,
     ) -> Result<(), NodeSpaceError> {
         // case 1: package1 . -> link package1 with name package1
         // case 2: package1 test -> link package1 with alias test
@@ -163,7 +166,12 @@ impl ConfigFile {
         // case 5: package2 . -> link package2 with name package2
         // case 6: package2 test2 -> link package2 with name test2
         // states -> do nothing, link self, link to another package
-        let current_package = Package::new(new_path, package_name.to_string(), package_alias);
+        let current_package = Package::new(
+            new_path,
+            package_name.to_string(),
+            package_alias,
+            output_dir,
+        );
         let action = handle_link_candidate(&self.linked_packages, &current_package);
 
         match action {
@@ -174,5 +182,40 @@ impl ConfigFile {
                 Err(error) => Err(error),
             },
         }
+    }
+
+    pub fn find_package(&self, path: String) -> Result<Package, NodeSpaceError> {
+        let projects = self.projects.clone();
+
+        let package = projects.iter().find(|x| x.path == path);
+
+        if package.is_none() {
+            return Err(NodeSpaceError::MissingProject);
+        }
+
+        let package = package.unwrap();
+
+        Ok(package.clone())
+    }
+
+    pub fn build_name_project_mapper(&self) -> HashMap<String, Package> {
+        let mut map: HashMap<String, Package> = HashMap::new();
+        let projects = self.projects.clone();
+
+        for project in projects {
+            let keys = [Some(project.name.clone()), project.alias.clone()];
+
+            for key in keys {
+                if key.is_none() {
+                    continue;
+                }
+
+                map.entry(key.unwrap())
+                    .and_modify(|e| *e = project.clone())
+                    .or_insert(project.clone());
+            }
+        }
+
+        map
     }
 }

@@ -1,7 +1,8 @@
 use std::{os::unix::net::UnixStream, path::Path, time::Duration};
 
 use crate::{
-    errors::socket::SocketError, watch_coordinator::coordinator::socket_file::delete_socket_file,
+    errors::{node_space::NodeSpaceError, socket::SocketError},
+    retry::retry,
 };
 
 const STREAM_TIMEOUT: Option<Duration> = Some(Duration::from_millis(100));
@@ -15,16 +16,24 @@ pub fn is_socket_active(socket_path: &str) -> Result<bool, SocketError> {
         return Ok(false);
     }
 
-    let stream = match UnixStream::connect(socket_path) {
-        Ok(stream) => stream,
-        Err(_) => {
-            dbg!("can't connect to socket, not active");
+    let stream = retry(
+        || match UnixStream::connect(socket_path) {
+            Ok(stream) => Ok(stream),
+            Err(_) => Err(NodeSpaceError::SocketError(
+                SocketError::ErrorConnectingToSocket("can't connect to stream".to_string()),
+            )),
+        },
+        None,
+        None,
+    );
 
-            delete_socket_file();
+    if stream.is_err() {
+        dbg!("can't connect to socket, not active");
 
-            return Ok(false);
-        }
-    };
+        return Ok(false);
+    }
+
+    let stream = stream.unwrap();
 
     match stream.set_read_timeout(STREAM_TIMEOUT) {
         Ok(_) => (),

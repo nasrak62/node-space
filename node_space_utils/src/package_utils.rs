@@ -13,6 +13,22 @@ use serde_json::{Map, Value};
 
 use crate::errors::invalid_project::InvalidNodeProjectError;
 
+const PACKAGE_JSON_ORDER: [&str; 13] = [
+    "name",
+    "version",
+    "description",
+    "keywords",
+    "main",
+    "scripts",
+    "repository",
+    "author",
+    "license",
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+];
+
 pub fn is_package_exist(linked_packages: &Vec<Package>, path: &str) -> bool {
     let result = linked_packages.iter().find(|x| &x.path == path);
 
@@ -76,21 +92,37 @@ pub fn get_package_json_data(path: &str) -> Result<Map<String, Value>, InvalidNo
         Err(_) => return Err(InvalidNodeProjectError::MissingPackageJson),
     };
 
-    match json_value {
-        Value::Object(map) => Ok(map),
-        _ => Err(InvalidNodeProjectError::InvalidPackageJson),
+    let mut unorderd_map = match json_value {
+        Value::Object(map) => map,
+        _ => return Err(InvalidNodeProjectError::InvalidPackageJson),
+    };
+
+    let mut ordered_map = Map::new();
+
+    for key in &PACKAGE_JSON_ORDER {
+        if let Some(value) = unorderd_map.remove(*key) {
+            ordered_map.insert(key.to_string(), value);
+        }
     }
+
+    let mut leftovers: Vec<(String, Value)> = unorderd_map.into_iter().collect();
+
+    leftovers.sort_by(|(key1, _), (key2, _)| key1.cmp(key2));
+
+    for (key, value) in leftovers {
+        ordered_map.insert(key, value);
+    }
+
+    Ok(ordered_map)
 }
 
-// get base data of a node project from its package json file
-// ```
-// let (package_json_data, package_name, current_path) = get_base_package_data(None)?; // use
-// current working dir
-//
-//
-// let (package_json_data, package_name, current_path) = get_base_package_data(&path)?; // use
-// custom path
-// ```
+/// get base data of a node project from its package json file
+/// ```
+/// let (package_json_data, package_name, current_path) = get_base_package_data(None)?; // use current working dir
+///
+///
+/// let (package_json_data, package_name, current_path) = get_base_package_data(&path)?; // use custom path
+/// ```
 pub fn get_base_package_data(
     package_path: Option<&str>,
 ) -> Result<(Map<String, Value>, String, String), InvalidNodeProjectError> {

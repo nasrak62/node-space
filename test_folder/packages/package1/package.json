@@ -1,17 +1,17 @@
 {
   "author": "",
   "dependencies": {
-    "test": "1.0.0",
-    "test2": "^5.0.0"
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2"
   },
   "description": "",
   "keywords": [],
   "license": "ISC",
   "main": "index.js",
   "name": "package1",
+  "type": "module",
   "scripts": {
-    "build": "echo 'hi'"
+    "build": "tsc"
   },
   "version": "1.0.0"
 }
-

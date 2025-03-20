@@ -7,6 +7,7 @@ use super::coordinator::CoordinatorBridge;
 use super::dependencies::DependenciesBridge;
 use super::group::GroupCommandBridge;
 use super::project::ProjectCommandBridge;
+use super::server::ServerBridge;
 
 #[derive(Subcommand)]
 pub enum Commands {
@@ -16,4 +17,5 @@ pub enum Commands {
     Deps(DependenciesBridge),
     Build(BuildArgs),
     Coordinator(CoordinatorBridge),
+    Server(ServerBridge),
 }

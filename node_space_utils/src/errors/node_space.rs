@@ -26,6 +26,9 @@ pub enum NodeSpaceError {
     CantCreateLogFile(String),
     CantWriteLogFile(String),
     CantCreateSocketFile(String),
+    MissingProject,
+    InvalidRoutesConfig(String),
+    ServerError(String),
 }
 
 impl fmt::Display for NodeSpaceError {
@@ -97,6 +100,17 @@ impl fmt::Display for NodeSpaceError {
             }
             NodeSpaceError::CantCreateSocketFile(ref message) => {
                 write!(f, "Can't create socket file: {}", message)
+            }
+            NodeSpaceError::MissingProject => {
+                write!(f, "Can't find project in config file")
+            }
+
+            NodeSpaceError::InvalidRoutesConfig(ref message) => {
+                write!(f, "Invalid server routes config: {}", message)
+            }
+
+            NodeSpaceError::ServerError(ref message) => {
+                write!(f, "Error serving file: {}", message)
             }
         }
     }

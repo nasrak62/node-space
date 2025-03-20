@@ -1,5 +1,11 @@
 pub mod config_file;
 pub mod coordinator;
+pub mod coordinator_listener;
+pub mod coordinator_pid_manager;
+pub mod coordinator_updates_manager;
+pub mod coordinator_watcher_handler;
 pub mod link_action;
 pub mod package;
+pub mod server_config;
 pub mod socket_build_data;
+pub mod unique_vec;

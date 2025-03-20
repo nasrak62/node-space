@@ -10,4 +10,7 @@ pub struct BuildArgs {
 
     #[arg(short, long)]
     pub start: bool,
+
+    #[arg(short, long)]
+    pub output_dir: Option<String>,
 }

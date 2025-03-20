@@ -13,6 +13,8 @@ pub mod modals;
 pub mod package_utils;
 pub mod path_utils;
 pub mod projects;
+pub mod retry;
+pub mod server;
 pub mod socket;
 pub mod symlink_utils;
 pub mod watch_coordinator;

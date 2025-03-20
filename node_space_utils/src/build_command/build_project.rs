@@ -44,7 +44,12 @@ pub fn handle_build_command(args: &BuildArgs) -> Result<bool, NodeSpaceError> {
 
     let config_file = ConfigFile::new()?;
     let (_, package_name, current_path) = get_base_package_data(None)?;
-    let current_project = Package::new(current_path, package_name.clone(), None);
+    let current_project = Package::new(
+        current_path,
+        package_name.clone(),
+        None,
+        args.output_dir.clone(),
+    );
 
     let current_symlink_option = config_file.symlinks.get(&package_name);
     let is_local_watcher = !args.deamon;

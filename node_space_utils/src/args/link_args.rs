@@ -9,4 +9,7 @@ pub struct LinkArgs {
 
     #[arg(short, long)]
     pub graph: bool,
+
+    #[arg(short, long)]
+    pub output_dir: Option<String>,
 }
