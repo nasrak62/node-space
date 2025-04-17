@@ -9,7 +9,12 @@ pub fn add_project(args: &ProjectArgs) -> Result<bool, NodeSpaceError> {
     let mut config_file = ConfigFile::new()?;
 
     let (_, package_name, current_path) = get_base_package_data(None)?;
-    let package = Package::new(current_path, package_name, None, args.output_dir.clone());
+    let package = Package::new(
+        current_path,
+        package_name,
+        args.name.clone(),
+        args.output_dir.clone(),
+    );
 
     config_file.add_project(&package)?;
 

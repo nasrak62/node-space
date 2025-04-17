@@ -51,16 +51,18 @@ fn build_routes(
         let project_name = route_defenition_parts[1];
 
         if !project_map.contains_key(project_name.trim()) {
-            return Err(NodeSpaceError::InvalidRoutesConfig(String::from(
-                "Unrecognized project name",
+            return Err(NodeSpaceError::InvalidRoutesConfig(format!(
+                "Unrecognized project name: {}",
+                project_name
             )));
         }
 
         let project = project_map.get(project_name.trim());
 
         if project.is_none() {
-            return Err(NodeSpaceError::InvalidRoutesConfig(String::from(
-                "Unrecognized project name",
+            return Err(NodeSpaceError::InvalidRoutesConfig(format!(
+                "Unrecognized project name: {}",
+                project_name
             )));
         }
 
@@ -94,13 +96,15 @@ pub async fn handle_server_config(args: &ConfigServerArgs) -> Result<bool, NodeS
     let port = args.port.clone().map_or(DEFAULT_PORT.to_string(), |v| v);
 
     let routes = build_routes(args.routes.clone(), project_map)?;
-    let server_config = ServerConfig::new(args.name.clone(), port, routes, args.main_route.clone());
+    let server_config = ServerConfig::new(port, args.name.clone(), routes, args.main_route.clone());
 
     config_file
         .server_config
         .entry(args.name.clone())
         .and_modify(|e| *e = server_config.clone())
         .or_insert(server_config);
+
+    config_file.save()?;
 
     Ok(true)
 }

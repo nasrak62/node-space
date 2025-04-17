@@ -1,12 +1,12 @@
 use std::{path::Path, time::Duration};
 
-use notify::{EventKind, INotifyWatcher, RecursiveMode};
-use notify_debouncer_full::{new_debouncer, DebouncedEvent, Debouncer, NoCache};
+use notify::{EventKind, RecommendedWatcher, RecursiveMode};
+use notify_debouncer_full::{new_debouncer, DebouncedEvent, Debouncer, RecommendedCache};
 
 const DEBOUNCE_TIMEOUT: Duration = Duration::from_secs(3);
 
 type NotifyReciver = std::sync::mpsc::Receiver<Result<Vec<DebouncedEvent>, Vec<notify::Error>>>;
-type Watcher = Debouncer<INotifyWatcher, NoCache>;
+type Watcher = Debouncer<RecommendedWatcher, RecommendedCache>;
 
 use crate::{
     command_line::node_build::run_node_command,

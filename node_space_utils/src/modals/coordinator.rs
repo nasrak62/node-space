@@ -3,8 +3,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use notify::INotifyWatcher;
-use notify_debouncer_full::{Debouncer, NoCache};
+use notify::RecommendedWatcher;
+use notify_debouncer_full::{Debouncer, RecommendedCache};
 
 use crate::watch_coordinator::coordinator::handle_signals::handle_termination_signals;
 use crate::watch_coordinator::coordinator::listener_utils::init_listener;
@@ -22,7 +22,7 @@ use super::coordinator_updates_manager::CoordinatorUpdatesManager;
 use super::coordinator_watcher_handler::CoordinatorWatcherHandler;
 use super::package::Package;
 
-pub type SharedWatcherClone = Arc<Mutex<Debouncer<INotifyWatcher, NoCache>>>;
+pub type SharedWatcherClone = Arc<Mutex<Debouncer<RecommendedWatcher, RecommendedCache>>>;
 
 pub struct Coordinator {
     pub watchers_target: Vec<Package>,

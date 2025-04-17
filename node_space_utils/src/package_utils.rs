@@ -73,6 +73,8 @@ pub fn get_package_json_path(path: &str) -> Result<PathBuf, InvalidNodeProjectEr
     let is_valid_file = package_json_path.exists() && package_json_path.is_file();
 
     if !is_valid_file {
+        dbg!(&path);
+
         return Err(InvalidNodeProjectError::MissingPackageJson);
     }
 

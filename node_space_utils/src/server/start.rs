@@ -1,9 +1,11 @@
 use axum::body::Body;
+use axum::http::HeaderValue;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use axum::{extract::Path as AxumPath, response::Response};
 use http_body_util::StreamBody;
+use hyper::header::CONTENT_TYPE;
 use hyper::StatusCode;
 use tokio_util::io::ReaderStream;
 
@@ -34,7 +36,7 @@ pub fn get_default_config(config: Option<&ServerConfig>) -> Result<ServerConfig,
     Ok(ServerConfig::default(current_path))
 }
 
-async fn build_file_body_stream(path: String) -> Result<Body, NodeSpaceError> {
+async fn build_file_body_stream(path: String) -> Result<(Body, HeaderValue), NodeSpaceError> {
     let file_result = tokio::fs::File::open(&path).await;
 
     if let Err(error) = file_result {
@@ -44,36 +46,50 @@ async fn build_file_body_stream(path: String) -> Result<Body, NodeSpaceError> {
     }
 
     let file = file_result.unwrap();
+    let content_type = mime_guess::from_path(&path).first_or_octet_stream();
+
+    let content_type = match HeaderValue::from_str(content_type.as_ref()) {
+        Ok(value) => value,
+        Err(error) => {
+            dbg!(error);
+
+            HeaderValue::from_static("application/octet-stream")
+        }
+    };
+
     let reader_stream = ReaderStream::new(file);
     let stream_body = StreamBody::new(reader_stream);
 
-    Ok(Body::from_stream(stream_body))
+    Ok((Body::from_stream(stream_body), content_type))
 }
 
 /// gets the outdir real path on the file system: /home/user/dev/project1/dist
 /// gets the request path localhost:3000/project1/index.js -> project1/index.js
-async fn serve_files(output_dir: &str, file_path: String) -> Response {
+async fn serve_files(output_dir: &str, file_path: String, main_route: String) -> Response {
     let mut path = String::from(output_dir) + "/" + &file_path;
     path = path.replace("//", "/");
 
-    let body = match build_file_body_stream(path.clone()).await {
+    let (body, content_type) = match build_file_body_stream(path.clone()).await {
         Err(error) => {
-            return (
-                axum::http::StatusCode::NOT_FOUND,
-                format!("File not found: {}, error: {}", path, error),
-            )
-                .into_response();
+            dbg!(error);
+
+            return serve_html(main_route).await;
         }
 
-        Ok(body) => body,
+        Ok(value) => value,
     };
 
-    match Response::builder().status(StatusCode::OK).body(body) {
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, content_type)
+        .body(body);
+
+    match response {
         Ok(value) => value,
         Err(error) => {
             return (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                format!("response error: {}, error: {}", path, error),
+                format!("response error - path: {}, error: {}", path, error),
             )
                 .into_response();
         }
@@ -85,24 +101,29 @@ async fn serve_html(main_route: String) -> Response {
     let mut path = main_route + "/index.html";
     path = path.replace("//", "/");
 
-    let body = match build_file_body_stream(path.clone()).await {
+    let (body, content_type) = match build_file_body_stream(path.clone()).await {
         Err(error) => {
             return (
                 axum::http::StatusCode::NOT_FOUND,
-                format!("File not found: {}, error: {}", path, error),
+                format!("file not found error - path: {}, error: {}", path, error),
             )
                 .into_response();
         }
 
-        Ok(body) => body,
+        Ok(value) => value,
     };
 
-    match Response::builder().status(StatusCode::OK).body(body) {
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, content_type)
+        .body(body);
+
+    match response {
         Ok(value) => value,
         Err(error) => {
             return (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                format!("response error: {}, error: {}", path, error),
+                format!("response error - path: {}, error: {}", path, error),
             )
                 .into_response();
         }
@@ -114,10 +135,13 @@ pub async fn handle_server_start(args: &StartServerArgs) -> Result<bool, NodeSpa
     let name = get_config_name(args)?;
     let server_config = config_file.server_config.get(&name);
 
+    dbg!(&config_file.server_config);
+
     if server_config.is_none() && args.name.is_some() {
-        return Err(NodeSpaceError::InvalidRoutesConfig(
-            "project wasn't found in configs".to_string(),
-        ));
+        return Err(NodeSpaceError::InvalidRoutesConfig(format!(
+            "project wasn't found in configs: {}",
+            &name
+        )));
     }
 
     let server_config = get_default_config(server_config)?;
@@ -135,7 +159,8 @@ pub async fn handle_server_start(args: &StartServerArgs) -> Result<bool, NodeSpa
         let output_clone = output_dir.clone();
         let files_route = (route.to_string() + "/{*file_path}").replace("//", "/");
         let base_route = (route.to_string() + "/").replace("//", "/");
-        let main_route_copy = main_route.clone();
+        let main_route_main_copy = main_route.clone();
+        let main_route_secondary_copy = main_route.clone();
 
         dbg!(route, &base_route);
 
@@ -143,12 +168,12 @@ pub async fn handle_server_start(args: &StartServerArgs) -> Result<bool, NodeSpa
             .route(
                 &files_route,
                 get(move |AxumPath(path): AxumPath<String>| async move {
-                    serve_files(&output_clone, path).await
+                    serve_files(&output_clone, path, main_route_main_copy).await
                 }),
             )
             .route(
                 &base_route,
-                get(move || async move { serve_html(main_route_copy).await }),
+                get(move || async move { serve_html(main_route_secondary_copy).await }),
             )
     }
 

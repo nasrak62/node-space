@@ -62,9 +62,10 @@ pub fn update_dependency_for_path(
     let new_json_content = match serde_json::to_string_pretty(&package_json_data) {
         Ok(value) => value,
         Err(error) => {
-            return Err(NodeSpaceError::InvalidPackageJsonAfterChanges(
-                error.to_string(),
-            ))
+            return Err(NodeSpaceError::InvalidPackageJsonAfterChanges(format!(
+                "{}: {}",
+                current_path, error
+            )))
         }
     };
 
