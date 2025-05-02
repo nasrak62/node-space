@@ -4,6 +4,7 @@ use crate::{
     errors::node_space::NodeSpaceError,
     modals::config_file::ConfigFile,
     package_utils::get_base_package_data,
+    sync_links::sync_links,
 };
 
 pub fn link_package(
@@ -21,6 +22,10 @@ pub fn link_package(
 }
 
 pub fn handle_link_command(link_args: &LinkArgs) -> Result<bool, NodeSpaceError> {
+    if link_args.sync {
+        sync_links()?;
+    }
+
     if link_args.show && link_args.graph {
         return Ok(display_symlink_graph()?);
     }

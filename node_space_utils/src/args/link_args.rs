@@ -11,5 +11,8 @@ pub struct LinkArgs {
     pub graph: bool,
 
     #[arg(short, long)]
+    pub sync: bool,
+
+    #[arg(short, long)]
     pub output_dir: Option<String>,
 }

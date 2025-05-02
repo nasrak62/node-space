@@ -17,5 +17,6 @@ pub mod retry;
 pub mod server;
 pub mod socket;
 pub mod symlink_utils;
+pub mod sync_links;
 pub mod watch_coordinator;
 pub mod watcher_utils;

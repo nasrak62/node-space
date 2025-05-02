@@ -120,3 +120,6 @@ pub fn add_local_watcher(data: SocketBuildData) -> Result<(), NodeSpaceError> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test;
