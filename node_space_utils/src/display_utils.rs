@@ -1,7 +1,7 @@
 use crate::{errors::node_space::NodeSpaceError, modals::config_file::ConfigFile};
 
 pub fn handle_show_linked_packages() -> Result<bool, NodeSpaceError> {
-    let config_file = ConfigFile::new()?;
+    let config_file = ConfigFile::new(None)?;
 
     for value in config_file.linked_packages.iter() {
         let alias = match &value.alias {
@@ -19,7 +19,7 @@ pub fn handle_show_linked_packages() -> Result<bool, NodeSpaceError> {
 }
 
 pub fn display_symlink_graph() -> Result<bool, NodeSpaceError> {
-    let config_file = ConfigFile::new()?;
+    let config_file = ConfigFile::new(None)?;
 
     for (project, linked_packages) in config_file.symlinks {
         println!("📦 {}", project);

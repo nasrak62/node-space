@@ -106,7 +106,7 @@ pub fn parse_package_name(name: &str) -> Result<(String, &str), NodeSpaceError> 
 }
 
 pub fn add_dependency(args: &AddDependencyArgs) -> Result<bool, NodeSpaceError> {
-    let config_file = ConfigFile::new()?;
+    let config_file = ConfigFile::new(None)?;
 
     let (package_name, package_version) = parse_package_name(&args.name)?;
 

@@ -131,7 +131,7 @@ async fn serve_html(main_route: String) -> Response {
 }
 
 pub async fn handle_server_start(args: &StartServerArgs) -> Result<bool, NodeSpaceError> {
-    let config_file = ConfigFile::new()?;
+    let config_file = ConfigFile::new(None)?;
     let name = get_config_name(args)?;
     let server_config = config_file.server_config.get(&name);
 

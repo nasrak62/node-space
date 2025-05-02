@@ -86,7 +86,7 @@ pub fn start_coordinator() -> Result<(), NodeSpaceError> {
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
 
-        Command::new("node-space")
+        let _ = Command::new("node-space")
             .arg("coordinator")
             .arg("start")
             .stdout(Stdio::null())

@@ -42,7 +42,7 @@ pub fn handle_build_command(args: &BuildArgs) -> Result<bool, NodeSpaceError> {
         return Ok(run_node_command(&path, "start")?);
     }
 
-    let config_file = ConfigFile::new()?;
+    let config_file = ConfigFile::new(None)?;
     let (_, package_name, current_path) = get_base_package_data(None)?;
     let current_project = Package::new(
         current_path,

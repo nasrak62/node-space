@@ -5,7 +5,7 @@ use crate::{
 };
 
 pub fn show_group(group_show_args: &GroupShowArgs) -> Result<bool, NodeSpaceError> {
-    let config_file = ConfigFile::new()?;
+    let config_file = ConfigFile::new(None)?;
 
     if group_show_args.name.is_none() {
         for (group, projects) in config_file.groups {

@@ -12,7 +12,7 @@ pub fn link_package(
     package_name_alias: Option<String>,
     output_dir: Option<String>,
 ) -> Result<bool, NodeSpaceError> {
-    let mut config_file = ConfigFile::new()?;
+    let mut config_file = ConfigFile::new(None)?;
 
     let (_, package_name, current_path) = get_base_package_data(package_path)?;
 

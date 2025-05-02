@@ -8,9 +8,10 @@ use crate::{
 
 pub const DEFAULT_PORT: &str = "3000";
 
+/// ```text
 /// routes should have the format "route_name => project_name, route_name2 => project_name2"
 /// we than transfrom it to
-/// ```
+///
 /// {
 /// "route_name": project_output_dir  -> default "dist"
 /// "route_name2": project2_output_dir  -> default "dist"
@@ -90,7 +91,7 @@ fn build_routes(
 }
 
 pub async fn handle_server_config(args: &ConfigServerArgs) -> Result<bool, NodeSpaceError> {
-    let mut config_file = ConfigFile::new()?;
+    let mut config_file = ConfigFile::new(None)?;
     let project_map = config_file.build_name_project_mapper();
 
     let port = args.port.clone().map_or(DEFAULT_PORT.to_string(), |v| v);

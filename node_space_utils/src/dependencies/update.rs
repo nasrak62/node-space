@@ -87,7 +87,7 @@ pub fn update_dependency_for_path(
 }
 
 pub fn update_dependency(args: &UpdateDependencyArgs) -> Result<bool, NodeSpaceError> {
-    let config_file = ConfigFile::new()?;
+    let config_file = ConfigFile::new(None)?;
 
     let (package_name, package_version) = parse_package_name(&args.name)?;
     let package_name_str = &package_name.clone().to_owned();

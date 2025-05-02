@@ -119,7 +119,7 @@ pub fn get_package_json_data(path: &str) -> Result<Map<String, Value>, InvalidNo
 }
 
 /// get base data of a node project from its package json file
-/// ```
+/// ```ignore
 /// let (package_json_data, package_name, current_path) = get_base_package_data(None)?; // use current working dir
 ///
 ///

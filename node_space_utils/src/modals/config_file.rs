@@ -30,8 +30,11 @@ pub struct ConfigFile {
 }
 
 impl ConfigFile {
-    pub fn new() -> Result<Self, InvalidNodeProjectError> {
-        let config_path = expand_tilde(CONFIG_PATH_STR)?;
+    pub fn new(file_path: Option<PathBuf>) -> Result<Self, InvalidNodeProjectError> {
+        let config_path = match file_path {
+            Some(value) => value,
+            None => expand_tilde(CONFIG_PATH_STR)?,
+        };
 
         let json_data = fs::read_to_string(&config_path).unwrap_or_else(|_| String::from("{}"));
 
@@ -217,5 +220,95 @@ impl ConfigFile {
         }
 
         map
+    }
+
+    pub fn sync_linked_packages(&mut self) -> Result<bool, NodeSpaceError> {
+        let linked_packages = std::mem::take(&mut self.linked_packages);
+        let original_length = linked_packages.len();
+        let mut new_linked_packages: Vec<Package> = vec![];
+
+        for package in linked_packages {
+            let exist = match std::fs::exists(&package.path) {
+                Ok(value) => value,
+                Err(error) => {
+                    dbg!(error);
+
+                    return Err(NodeSpaceError::SymlinkError(SymlinkError::Other(
+                        "can't check if path exists".to_string(),
+                    )));
+                }
+            };
+
+            if exist {
+                new_linked_packages.push(package);
+            }
+        }
+
+        if original_length != new_linked_packages.len() {
+            self.linked_packages = new_linked_packages;
+            self.save()?;
+        }
+
+        Ok(true)
+    }
+
+    pub fn sync_symlinks(&mut self) -> Result<bool, NodeSpaceError> {
+        let link_list = self.symlinks.clone();
+        self.symlinks.clear();
+
+        for (package_name, inner_links) in link_list {
+            let mut new_symlinks: Vec<Package> = vec![];
+            let package = find_package_by_name(&self.projects, &package_name)?;
+            let path = &package.path;
+
+            for inner_link in inner_links {
+                let full_path = PathBuf::from(path)
+                    .join("node_modules")
+                    .join(inner_link.name);
+
+                let is_exists = match std::fs::exists(&full_path) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        dbg!(error);
+
+                        return Err(NodeSpaceError::SymlinkError(SymlinkError::Other(
+                            "can't check if file exists".to_string(),
+                        )));
+                    }
+                };
+
+                if !is_exists {
+                    continue;
+                }
+
+                let metadata = match std::fs::symlink_metadata(full_path) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        dbg!(error);
+
+                        return Err(NodeSpaceError::SymlinkError(SymlinkError::Other(
+                            "can't check file metadata".to_string(),
+                        )));
+                    }
+                };
+
+                if metadata.file_type().is_symlink() {
+                    new_symlinks.push(package.clone())
+                }
+            }
+
+            self.symlinks.insert(package_name, new_symlinks);
+        }
+
+        self.save()?;
+
+        Ok(true)
+    }
+
+    pub fn sync_links(&mut self) -> Result<bool, NodeSpaceError> {
+        self.sync_linked_packages()?;
+        self.sync_symlinks()?;
+
+        Ok(true)
     }
 }

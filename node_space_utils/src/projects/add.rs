@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn add_project(args: &ProjectArgs) -> Result<bool, NodeSpaceError> {
-    let mut config_file = ConfigFile::new()?;
+    let mut config_file = ConfigFile::new(None)?;
 
     let (_, package_name, current_path) = get_base_package_data(None)?;
     let package = Package::new(
